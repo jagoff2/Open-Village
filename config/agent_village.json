@@ -1,0 +1,90 @@
+{
+  "village_name": "Collaborative Intelligence Hub",
+  "base_directory": "./agent_village_data",
+  "max_concurrent_agents": 10,
+  "chatroom_config": {
+    "name": "Main Village Chat",
+    "description": "Central communication hub for all agents",
+    "persistence_path": "./agent_village_data/chatroom",
+    "max_history": 1000,
+    "broadcast_system_messages": true
+  },
+  "memory_config": {
+    "storage_path": "./agent_village_data/memory",
+    "embedding_dimension": 1536,
+    "embedding_model": "openai",
+    "max_entries_per_agent": 10000,
+    "cleanup_interval": 3600
+  },
+  "agent_configs": [
+    {
+      "name": "ProjectManager",
+      "role": "Project Manager",
+      "description": "Coordinates tasks, assigns work, and ensures project goals are met",
+      "llm_model": "gpt-4",
+      "llm_temperature": 0.3,
+      "tools": ["list_files", "read_file", "create_project"],
+      "permissions": ["read", "write", "assign_tasks"],
+      "system_prompt": "You are the Project Manager for the Agent Village. Your role is to coordinate tasks, assign work to agents based on their skills, and ensure that project goals are met. You should maintain a high-level view of all activities and help agents collaborate effectively."
+    },
+    {
+      "name": "SoftwareEngineer",
+      "role": "Software Engineer",
+      "description": "Designs and implements software solutions, writes code, and solves technical problems",
+      "llm_model": "gpt-4",
+      "llm_temperature": 0.2,
+      "tools": ["list_files", "read_file", "write_file", "run_python", "create_project"],
+      "permissions": ["read", "write", "execute"],
+      "system_prompt": "You are a Software Engineer in the Agent Village. Your role is to design and implement software solutions, write high-quality code, and solve technical problems. You should collaborate with other agents to build robust and efficient systems."
+    },
+    {
+      "name": "DataScientist",
+      "role": "Data Scientist",
+      "description": "Analyzes data, builds models, and extracts insights to support decision-making",
+      "llm_model": "gpt-4",
+      "llm_temperature": 0.3,
+      "tools": ["list_files", "read_file", "write_file", "run_python"],
+      "permissions": ["read", "write", "execute"],
+      "system_prompt": "You are a Data Scientist in the Agent Village. Your role is to analyze data, build statistical models, and extract meaningful insights to support decision-making. You should collaborate with other agents to leverage data effectively."
+    },
+    {
+      "name": "DocumentationSpecialist",
+      "role": "Documentation Specialist",
+      "description": "Creates and maintains comprehensive documentation for projects and code",
+      "llm_model": "gpt-4",
+      "llm_temperature": 0.4,
+      "tools": ["list_files", "read_file", "write_file"],
+      "permissions": ["read", "write"],
+      "system_prompt": "You are a Documentation Specialist in the Agent Village. Your role is to create and maintain comprehensive, accurate, and user-friendly documentation for projects and code. You should ensure that all work is well-documented and accessible."
+    }
+  ],
+  "virtual_computers": [
+    {
+      "name": "MainComputer",
+      "working_directory": "./agent_village_data/computers/main",
+      "max_execution_time": 30,
+      "max_memory": 512,
+      "enable_network": false,
+      "enable_file_access": true,
+      "allowed_languages": ["python", "javascript", "bash"]
+    },
+    {
+      "name": "DataComputer",
+      "working_directory": "./agent_village_data/computers/data",
+      "max_execution_time": 60,
+      "max_memory": 1024,
+      "enable_network": false,
+      "enable_file_access": true,
+      "allowed_languages": ["python", "bash"]
+    }
+  ],
+  "custom_configuration": {
+    "enable_performance_monitoring": true,
+    "auto_backup_interval": 3600,
+    "default_project_goals": [
+      "Improve the Agent Village codebase",
+      "Enhance collaboration between agents",
+      "Develop new capabilities for the system"
+    ]
+  }
+}

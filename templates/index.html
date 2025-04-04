@@ -1,0 +1,1687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Village - Collaborative Intelligence Hub</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding-top: 20px;
+        }
+        .chat-container {
+            height: 500px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .message-system {
+            background-color: #f8f9fa;
+            border-left: 4px solid #6c757d;
+        }
+        .message-chat {
+            background-color: #e9ecef;
+            border-left: 4px solid #007bff;
+        }
+        .message-command {
+            background-color: #e9ecef;
+            border-left: 4px solid #fd7e14;
+        }
+        .message-result {
+            background-color: #e9ecef;
+            border-left: 4px solid #28a745;
+        }
+        .message-error {
+            background-color: #f8d7da;
+            border-left: 4px solid #dc3545;
+        }
+        .agent-list {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 10px;
+        }
+        .agent-item {
+            padding: 8px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+            cursor: pointer;
+        }
+        .agent-item:hover {
+            background-color: #e9ecef;
+        }
+        .agent-item.active {
+            background-color: #cff4fc;
+            border-left: 4px solid #0dcaf0;
+        }
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+        .status-active {
+            background-color: #28a745;
+        }
+        .status-paused {
+            background-color: #fd7e14;
+        }
+        .status-terminated {
+            background-color: #dc3545;
+        }
+        .status-error {
+            background-color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="mb-4">
+            <h1 class="display-5">Agent Village</h1>
+            <p class="lead">Collaborative Intelligence Hub</p>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="badge bg-primary" id="status-badge">Initializing</span>
+                    <span class="small" id="uptime">Uptime: 0h 0m 0s</span>
+                </div>
+                <div>
+                    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#statusModal">
+                        System Status
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="row">
+            <div class="col-md-3">
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Agents</h5>
+                        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addAgentModal">
+                            <i class="bi bi-plus"></i> Add
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="agent-list" id="agentList">
+                            <!-- Agent list will be populated here -->
+                            <div class="text-center p-3 text-muted">
+                                Loading agents...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Projects</h5>
+                        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addProjectModal">
+                            <i class="bi bi-plus"></i> Add
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush" id="projectList">
+                            <!-- Project list will be populated here -->
+                            <div class="text-center p-3 text-muted">
+                                Loading projects...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-9">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Village Chat</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chat-container" id="chatContainer">
+                            <!-- Messages will be displayed here -->
+                            <div class="text-center text-muted">
+                                <p>Welcome to the Agent Village chat. Messages will appear here.</p>
+                            </div>
+                        </div>
+                        <form id="messageForm">
+                            <div class="input-group">
+                                <select class="form-select flex-grow-0" style="width: 150px;" id="recipientSelect">
+                                    <option value="">All Agents</option>
+                                    <!-- Agent options will be populated here -->
+                                </select>
+                                <input type="text" class="form-control" id="messageInput" placeholder="Type your message...">
+                                <button class="btn btn-primary" type="submit">Send</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <ul class="nav nav-tabs card-header-tabs" id="resourceTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="computers-tab" data-bs-toggle="tab" data-bs-target="#computers" type="button" role="tab" aria-controls="computers" aria-selected="true">
+                                    Computers
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="memories-tab" data-bs-toggle="tab" data-bs-target="#memories" type="button" role="tab" aria-controls="memories" aria-selected="false">
+                                    Memories
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="virtual-space-tab" data-bs-toggle="tab" data-bs-target="#virtual-space" type="button" role="tab" aria-controls="virtual-space" aria-selected="false">
+                                    Virtual Space
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="card-body">
+                        <div class="tab-content" id="resourceTabsContent">
+                            <div class="tab-pane fade show active" id="computers" role="tabpanel" aria-labelledby="computers-tab">
+                                <h5>Virtual Computers</h5>
+                                <div id="computersList">
+                                    <!-- Computers will be displayed here -->
+                                    <div class="text-center text-muted">
+                                        <p>Loading computers...</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="memories" role="tabpanel" aria-labelledby="memories-tab">
+                                <div class="mb-3">
+                                    <label for="memoryAgentSelect" class="form-label">Select Agent:</label>
+                                    <select class="form-select" id="memoryAgentSelect">
+                                        <option value="">Select an agent</option>
+                                        <!-- Agent options will be populated here -->
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="memoryTypeSelect" class="form-label">Memory Type:</label>
+                                    <select class="form-select" id="memoryTypeSelect">
+                                        <option value="">All Types</option>
+                                        <option value="observation">Observation</option>
+                                        <option value="thought">Thought</option>
+                                        <option value="conversation">Conversation</option>
+                                        <option value="fact">Fact</option>
+                                        <option value="experience">Experience</option>
+                                        <option value="action">Action</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <button class="btn btn-primary" id="loadMemoriesBtn">Load Memories</button>
+                                </div>
+                                <div id="memoriesList">
+                                    <!-- Memories will be displayed here -->
+                                    <div class="text-center text-muted">
+                                        <p>Select an agent and click "Load Memories" to view memories.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="virtual-space" role="tabpanel" aria-labelledby="virtual-space-tab">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h5>Rooms</h5>
+                                        <div id="roomsList">
+                                            <!-- Rooms will be displayed here -->
+                                            <div class="text-center text-muted">
+                                                <p>Loading rooms...</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h5>Workspaces</h5>
+                                        <div id="workspacesList">
+                                            <!-- Workspaces will be displayed here -->
+                                            <div class="text-center text-muted">
+                                                <p>Loading workspaces...</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Agent Modal -->
+    <div class="modal fade" id="addAgentModal" tabindex="-1" aria-labelledby="addAgentModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addAgentModalLabel">Add New Agent</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addAgentForm">
+                        <div class="mb-3">
+                            <label for="agentName" class="form-label">Name</label>
+                            <input type="text" class="form-control" id="agentName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="agentRole" class="form-label">Role</label>
+                            <input type="text" class="form-control" id="agentRole" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="agentDescription" class="form-label">Description</label>
+                            <textarea class="form-control" id="agentDescription" rows="3" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="agentModel" class="form-label">LLM Model</label>
+                            <select class="form-select" id="agentModel">
+                                <option value="gpt-4">GPT-4</option>
+                                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Tools</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="read_file" id="toolReadFile">
+                                <label class="form-check-label" for="toolReadFile">Read File</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="write_file" id="toolWriteFile">
+                                <label class="form-check-label" for="toolWriteFile">Write File</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="run_python" id="toolRunPython">
+                                <label class="form-check-label" for="toolRunPython">Run Python</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="create_project" id="toolCreateProject">
+                                <label class="form-check-label" for="toolCreateProject">Create Project</label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="agentPrompt" class="form-label">System Prompt</label>
+                            <textarea class="form-control" id="agentPrompt" rows="5"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="addAgentBtn">Add Agent</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Project Modal -->
+    <div class="modal fade" id="addProjectModal" tabindex="-1" aria-labelledby="addProjectModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addProjectModalLabel">Create New Project</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addProjectForm">
+                        <div class="mb-3">
+                            <label for="projectName" class="form-label">Name</label>
+                            <input type="text" class="form-control" id="projectName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="projectDescription" class="form-label">Description</label>
+                            <textarea class="form-control" id="projectDescription" rows="3" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="projectGoals" class="form-label">Goals (one per line)</label>
+                            <textarea class="form-control" id="projectGoals" rows="5" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Team Members</label>
+                            <div id="projectTeamMembers">
+                                <!-- Agent checkboxes will be populated here -->
+                                <div class="text-center text-muted">
+                                    <p>Loading agents...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="addProjectBtn">Create Project</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Status Modal -->
+    <div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="statusModalLabel">System Status</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="systemStatusDetails">
+                        <!-- System status will be displayed here -->
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2">Loading system status...</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="refreshStatusBtn">Refresh</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Execute Command Modal -->
+    <div class="modal fade" id="executeCommandModal" tabindex="-1" aria-labelledby="executeCommandModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="executeCommandModalLabel">Execute Command</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="executeCommandForm">
+                        <div class="mb-3">
+                            <label for="cmdComputer" class="form-label">Computer</label>
+                            <select class="form-select" id="cmdComputer" required>
+                                <!-- Computer options will be populated here -->
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="cmdTool" class="form-label">Tool</label>
+                            <select class="form-select" id="cmdTool" required>
+                                <option value="">Select a tool</option>
+                                <!-- Tool options will be populated here -->
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="cmdAgent" class="form-label">Execute As Agent (optional)</label>
+                            <select class="form-select" id="cmdAgent">
+                                <option value="">System (no agent)</option>
+                                <!-- Agent options will be populated here -->
+                            </select>
+                        </div>
+                        <div id="cmdParamsContainer">
+                            <!-- Tool parameters will be displayed here -->
+                            <div class="text-center text-muted">
+                                <p>Select a tool to see parameters</p>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="executeCommandBtn">Execute</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Main JavaScript for the Agent Village UI
+        document.addEventListener('DOMContentLoaded', function() {
+            // WebSocket connection
+            let socket;
+            let isConnected = false;
+            let reconnectAttempts = 0;
+            const maxReconnectAttempts = 5;
+            
+            // Initialize the WebSocket connection
+            function initWebSocket() {
+                const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = `${wsProtocol}//${window.location.host}/ws`;
+                
+                socket = new WebSocket(wsUrl);
+                
+                socket.onopen = function() {
+                    console.log('WebSocket connection established');
+                    isConnected = true;
+                    reconnectAttempts = 0;
+                    
+                    // Subscribe to topics
+                    socket.send(JSON.stringify({
+                        type: 'subscribe',
+                        topics: ['messages', 'agents', 'projects', 'commands']
+                    }));
+                    
+                    // Start ping interval
+                    startPingInterval();
+                };
+                
+                socket.onmessage = function(event) {
+                    const data = JSON.parse(event.data);
+                    handleWebSocketMessage(data);
+                };
+                
+                socket.onclose = function() {
+                    console.log('WebSocket connection closed');
+                    isConnected = false;
+                    
+                    // Attempt to reconnect
+                    if (reconnectAttempts < maxReconnectAttempts) {
+                        reconnectAttempts++;
+                        setTimeout(initWebSocket, 2000 * reconnectAttempts);
+                    } else {
+                        console.error('Maximum reconnect attempts reached');
+                    }
+                };
+                
+                socket.onerror = function(error) {
+                    console.error('WebSocket error:', error);
+                };
+            }
+            
+            // Start a ping interval to keep the connection alive
+            let pingInterval;
+            function startPingInterval() {
+                pingInterval = setInterval(function() {
+                    if (isConnected) {
+                        socket.send(JSON.stringify({
+                            type: 'ping',
+                            timestamp: Date.now()
+                        }));
+                    }
+                }, 30000); // Ping every 30 seconds
+            }
+            
+            // Handle WebSocket messages
+            function handleWebSocketMessage(data) {
+                const type = data.type;
+                
+                switch (type) {
+                    case 'pong':
+                        // Connection is still alive
+                        break;
+                    case 'new_message':
+                        addMessage(data.message);
+                        break;
+                    case 'agent_added':
+                        loadAgents();
+                        break;
+                    case 'agent_removed':
+                        loadAgents();
+                        break;
+                    case 'project_created':
+                        loadProjects();
+                        break;
+                    case 'command_executed':
+                        // Refresh system status
+                        break;
+                    default:
+                        console.log('Unknown message type:', type);
+                }
+            }
+            
+            // Initialize WebSocket connection
+            initWebSocket();
+            
+            // Load initial data
+            loadStatus();
+            loadAgents();
+            loadProjects();
+            loadComputers();
+            loadRooms();
+            loadWorkspaces();
+            
+            // Set up refresh intervals
+            setInterval(loadStatus, 10000); // Refresh status every 10 seconds
+            
+            // Load system status
+            function loadStatus() {
+                fetch('/api/status')
+                    .then(response => response.json())
+                    .then(data => {
+                        updateStatusDisplay(data);
+                    })
+                    .catch(error => {
+                        console.error('Error loading status:', error);
+                    });
+            }
+            
+            // Update status display
+            function updateStatusDisplay(status) {
+                // Update status badge
+                const statusBadge = document.getElementById('status-badge');
+                statusBadge.textContent = status.status.charAt(0).toUpperCase() + status.status.slice(1);
+                
+                // Update badge color based on status
+                statusBadge.className = 'badge';
+                switch (status.status) {
+                    case 'running':
+                        statusBadge.classList.add('bg-success');
+                        break;
+                    case 'initializing':
+                        statusBadge.classList.add('bg-primary');
+                        break;
+                    case 'error':
+                        statusBadge.classList.add('bg-danger');
+                        break;
+                    case 'stopped':
+                        statusBadge.classList.add('bg-secondary');
+                        break;
+                    default:
+                        statusBadge.classList.add('bg-info');
+                }
+                
+                // Update uptime
+                const uptimeElement = document.getElementById('uptime');
+                uptimeElement.textContent = `Uptime: ${status.uptime.formatted}`;
+                
+                // Update system status modal if open
+                const statusModal = document.getElementById('statusModal');
+                if (statusModal.classList.contains('show')) {
+                    updateSystemStatusModal(status);
+                }
+            }
+            
+            // Update system status modal
+            function updateSystemStatusModal(status) {
+                const statusDetails = document.getElementById('systemStatusDetails');
+                
+                // Create HTML for status display
+                let html = `
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">System</h5>
+                                    <p><strong>Status:</strong> <span class="badge bg-${getStatusColor(status.status)}">${status.status}</span></p>
+                                    <p><strong>Village:</strong> ${status.village_name}</p>
+                                    <p><strong>Uptime:</strong> ${status.uptime.formatted}</p>
+                                    <p><strong>Messages:</strong> ${status.messages}</p>
+                                    <p><strong>Tasks Completed:</strong> ${status.tasks_completed}</p>
+                                    <p><strong>Errors:</strong> ${status.errors}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">Agents</h5>
+                                    <p><strong>Total:</strong> ${status.agents.total}/${status.agents.max}</p>
+                                    <div class="mt-3">
+                                        <h6>Agent Status</h6>
+                                        <ul class="list-group">
+                `;
+                
+                // Add agent status
+                for (const [name, agent] of Object.entries(status.agents.stats)) {
+                    html += `
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            ${name} (${agent.role})
+                            <span class="badge bg-${getStatusColor(agent.status)}">${agent.status}</span>
+                        </li>
+                    `;
+                }
+                
+                html += `
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">Projects</h5>
+                                    <p><strong>Total:</strong> ${status.projects.total}</p>
+                                    <div class="mt-3">
+                                        <h6>Project Status</h6>
+                                        <ul class="list-group">
+                `;
+                
+                // Add project status
+                for (const [id, project] of Object.entries(status.projects.stats)) {
+                    html += `
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            ${project.name}
+                            <span class="badge bg-${getStatusColor(project.status)}">${project.status}</span>
+                        </li>
+                    `;
+                }
+                
+                html += `
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">Agent Metrics</h5>
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>Agent</th>
+                                                    <th>Messages Received</th>
+                                                    <th>Messages Sent</th>
+                                                    <th>Tools Used</th>
+                                                    <th>Tasks Completed</th>
+                                                    <th>Errors</th>
+                                                    <th>Avg Response Time (s)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                `;
+                
+                // Add agent metrics
+                for (const [name, agent] of Object.entries(status.agents.stats)) {
+                    const metrics = agent.metrics;
+                    html += `
+                        <tr>
+                            <td>${name}</td>
+                            <td>${metrics.messages_received}</td>
+                            <td>${metrics.messages_sent}</td>
+                            <td>${metrics.tools_used}</td>
+                            <td>${metrics.tasks_completed}</td>
+                            <td>${metrics.errors_encountered}</td>
+                            <td>${metrics.avg_response_time ? metrics.avg_response_time.toFixed(2) : 'N/A'}</td>
+                        </tr>
+                    `;
+                }
+                
+                html += `
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Update the status details
+                statusDetails.innerHTML = html;
+            }
+            
+            // Get status color
+            function getStatusColor(status) {
+                switch (status) {
+                    case 'running':
+                    case 'active':
+                        return 'success';
+                    case 'initializing':
+                        return 'primary';
+                    case 'error':
+                        return 'danger';
+                    case 'stopped':
+                    case 'terminated':
+                        return 'secondary';
+                    case 'paused':
+                        return 'warning';
+                    default:
+                        return 'info';
+                }
+            }
+            
+            // Load agents
+            function loadAgents() {
+                fetch('/api/agents')
+                    .then(response => response.json())
+                    .then(data => {
+                        updateAgentList(data.agents);
+                        updateRecipientSelect(data.agents);
+                        updateMemoryAgentSelect(data.agents);
+                        updateProjectTeamMembersSelect(data.agents);
+                        updateCommandAgentSelect(data.agents);
+                    })
+                    .catch(error => {
+                        console.error('Error loading agents:', error);
+                    });
+            }
+            
+            // Update agent list
+            function updateAgentList(agents) {
+                const agentList = document.getElementById('agentList');
+                
+                if (agents.total === 0) {
+                    agentList.innerHTML = `
+                        <div class="text-center p-3 text-muted">
+                            <p>No agents available</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let html = '';
+                
+                for (const [name, agent] of Object.entries(agents.stats)) {
+                    const statusClass = getStatusIndicatorClass(agent.status);
+                    
+                    html += `
+                        <div class="agent-item" data-agent="${name}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="status-indicator ${statusClass}"></span>
+                                    <strong>${name}</strong>
+                                </div>
+                                <span class="badge bg-light text-dark">${agent.role}</span>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                agentList.innerHTML = html;
+                
+                // Add click event listeners
+                const agentItems = agentList.querySelectorAll('.agent-item');
+                agentItems.forEach(item => {
+                    item.addEventListener('click', function() {
+                        const agentName = this.dataset.agent;
+                        showAgentDetails(agentName);
+                    });
+                });
+            }
+            
+            // Get status indicator class
+            function getStatusIndicatorClass(status) {
+                switch (status) {
+                    case 'active':
+                        return 'status-active';
+                    case 'paused':
+                        return 'status-paused';
+                    case 'terminated':
+                        return 'status-terminated';
+                    case 'error':
+                        return 'status-error';
+                    default:
+                        return '';
+                }
+            }
+            
+            // Update recipient select
+            function updateRecipientSelect(agents) {
+                const recipientSelect = document.getElementById('recipientSelect');
+                
+                // Clear existing options except the first one
+                while (recipientSelect.options.length > 1) {
+                    recipientSelect.remove(1);
+                }
+                
+                // Add agent options
+                for (const [name, agent] of Object.entries(agents.stats)) {
+                    const option = document.createElement('option');
+                    option.value = name;
+                    option.textContent = `${name} (${agent.role})`;
+                    recipientSelect.appendChild(option);
+                }
+            }
+            
+            // Update memory agent select
+            function updateMemoryAgentSelect(agents) {
+                const memoryAgentSelect = document.getElementById('memoryAgentSelect');
+                
+                // Clear existing options except the first one
+                while (memoryAgentSelect.options.length > 1) {
+                    memoryAgentSelect.remove(1);
+                }
+                
+                // Add agent options
+                for (const [name, agent] of Object.entries(agents.stats)) {
+                    const option = document.createElement('option');
+                    option.value = name;
+                    option.textContent = `${name} (${agent.role})`;
+                    memoryAgentSelect.appendChild(option);
+                }
+            }
+            
+            // Update project team members select
+            function updateProjectTeamMembersSelect(agents) {
+                const teamMembersContainer = document.getElementById('projectTeamMembers');
+                
+                if (!agents.total) {
+                    teamMembersContainer.innerHTML = `
+                        <div class="text-center text-muted">
+                            <p>No agents available</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let html = '';
+                
+                for (const [name, agent] of Object.entries(agents.stats)) {
+                    html += `
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="${name}" id="teamMember_${name}">
+                            <label class="form-check-label" for="teamMember_${name}">
+                                ${name} (${agent.role})
+                            </label>
+                        </div>
+                    `;
+                }
+                
+                teamMembersContainer.innerHTML = html;
+            }
+            
+            // Update command agent select
+            function updateCommandAgentSelect(agents) {
+                const cmdAgent = document.getElementById('cmdAgent');
+                
+                // Clear existing options except the first one
+                while (cmdAgent.options.length > 1) {
+                    cmdAgent.remove(1);
+                }
+                
+                // Add agent options
+                for (const [name, agent] of Object.entries(agents.stats)) {
+                    const option = document.createElement('option');
+                    option.value = name;
+                    option.textContent = `${name} (${agent.role})`;
+                    cmdAgent.appendChild(option);
+                }
+            }
+            
+            // Load projects
+            function loadProjects() {
+                fetch('/api/projects')
+                    .then(response => response.json())
+                    .then(data => {
+                        updateProjectList(data.projects);
+                    })
+                    .catch(error => {
+                        console.error('Error loading projects:', error);
+                    });
+            }
+            
+            // Update project list
+            function updateProjectList(projects) {
+                const projectList = document.getElementById('projectList');
+                
+                if (projects.total === 0) {
+                    projectList.innerHTML = `
+                        <div class="text-center p-3 text-muted">
+                            <p>No projects available</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let html = '';
+                
+                for (const [id, project] of Object.entries(projects.stats)) {
+                    html += `
+                        <a href="#" class="list-group-item list-group-item-action" data-project="${id}">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">${project.name}</h5>
+                                <small class="text-${getStatusTextColor(project.status)}">${project.status}</small>
+                            </div>
+                            <p class="mb-1">Team size: ${project.team_size} | Goals: ${project.goals}</p>
+                            <small>Created: ${formatDate(project.created_at)}</small>
+                        </a>
+                    `;
+                }
+                
+                projectList.innerHTML = html;
+                
+                // Add click event listeners
+                const projectItems = projectList.querySelectorAll('.list-group-item');
+                projectItems.forEach(item => {
+                    item.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        const projectId = this.dataset.project;
+                        showProjectDetails(projectId);
+                    });
+                });
+            }
+            
+            // Get status text color
+            function getStatusTextColor(status) {
+                switch (status) {
+                    case 'active':
+                        return 'success';
+                    case 'completed':
+                        return 'primary';
+                    case 'failed':
+                        return 'danger';
+                    case 'paused':
+                        return 'warning';
+                    default:
+                        return 'muted';
+                }
+            }
+            
+            // Format date
+            function formatDate(timestamp) {
+                const date = new Date(timestamp * 1000);
+                return date.toLocaleString();
+            }
+            
+            // Load computers
+            function loadComputers() {
+                fetch('/api/computers')
+                    .then(response => response.json())
+                    .then(data => {
+                        updateComputersList(data);
+                        updateComputerSelect(data);
+                    })
+                    .catch(error => {
+                        console.error('Error loading computers:', error);
+                    });
+            }
+            
+            // Update computers list
+            function updateComputersList(data) {
+                const computersList = document.getElementById('computersList');
+                
+                if (data.count === 0) {
+                    computersList.innerHTML = `
+                        <div class="text-center text-muted">
+                            <p>No computers available</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let html = `
+                    <div class="mb-3">
+                        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#executeCommandModal">
+                            Execute Command
+                        </button>
+                    </div>
+                    <div class="list-group">
+                `;
+                
+                for (const computer of data.computers) {
+                    html += `
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">${computer.name}</h6>
+                                <span class="badge bg-primary">${computer.tools.length} tools</span>
+                            </div>
+                            <div class="mt-2">
+                                <small class="text-muted">Available tools:</small>
+                                <div class="mt-1">
+                    `;
+                    
+                    for (const tool of computer.tools) {
+                        html += `<span class="badge bg-light text-dark me-1">${tool.name}</span>`;
+                    }
+                    
+                    html += `
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                html += `</div>`;
+                
+                computersList.innerHTML = html;
+            }
+            
+            // Update computer select
+            function updateComputerSelect(data) {
+                const cmdComputer = document.getElementById('cmdComputer');
+                
+                // Clear existing options
+                cmdComputer.innerHTML = '';
+                
+                // Add computer options
+                for (const computer of data.computers) {
+                    const option = document.createElement('option');
+                    option.value = computer.name;
+                    option.textContent = computer.name;
+                    cmdComputer.appendChild(option);
+                }
+                
+                // Trigger change event to load tools
+                if (cmdComputer.options.length > 0) {
+                    cmdComputer.dispatchEvent(new Event('change'));
+                }
+            }
+            
+            // Load rooms
+            function loadRooms() {
+                fetch('/api/virtual-space/rooms')
+                    .then(response => response.json())
+                    .then(data => {
+                        updateRoomsList(data);
+                    })
+                    .catch(error => {
+                        console.error('Error loading rooms:', error);
+                    });
+            }
+            
+            // Update rooms list
+            function updateRoomsList(data) {
+                const roomsList = document.getElementById('roomsList');
+                
+                if (data.count === 0) {
+                    roomsList.innerHTML = `
+                        <div class="text-center text-muted">
+                            <p>No rooms available</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let html = `<div class="list-group">`;
+                
+                for (const room of data.rooms) {
+                    html += `
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">${room.name}</h6>
+                                <span class="badge bg-primary">${room.agents.length} agents</span>
+                            </div>
+                            <small class="text-muted">${room.description}</small>
+                            <div class="mt-2">
+                                <small class="text-muted">Agents in this room:</small>
+                                <div class="mt-1">
+                    `;
+                    
+                    if (room.agents.length === 0) {
+                        html += `<small class="text-muted">None</small>`;
+                    } else {
+                        for (const agent of room.agents) {
+                            html += `<span class="badge bg-light text-dark me-1">${agent}</span>`;
+                        }
+                    }
+                    
+                    html += `
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                html += `</div>`;
+                
+                roomsList.innerHTML = html;
+            }
+            
+            // Load workspaces
+            function loadWorkspaces() {
+                fetch('/api/virtual-space/workspaces')
+                    .then(response => response.json())
+                    .then(data => {
+                        updateWorkspacesList(data);
+                    })
+                    .catch(error => {
+                        console.error('Error loading workspaces:', error);
+                    });
+            }
+            
+            // Update workspaces list
+            function updateWorkspacesList(data) {
+                const workspacesList = document.getElementById('workspacesList');
+                
+                if (data.count === 0) {
+                    workspacesList.innerHTML = `
+                        <div class="text-center text-muted">
+                            <p>No workspaces available</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let html = `<div class="list-group">`;
+                
+                for (const workspace of data.workspaces) {
+                    html += `
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">${workspace.name}</h6>
+                                <span class="badge bg-primary">${workspace.documents} documents</span>
+                            </div>
+                            <small class="text-muted">${workspace.description}</small>
+                            <div class="mt-2">
+                                <small class="text-muted">Owner: ${workspace.owner || 'None'}</small>
+                                <div class="mt-1">
+                                    <small class="text-muted">Collaborators:</small>
+                    `;
+                    
+                    if (workspace.collaborators.length === 0) {
+                        html += `<small class="text-muted">None</small>`;
+                    } else {
+                        for (const collaborator of workspace.collaborators) {
+                            html += `<span class="badge bg-light text-dark me-1">${collaborator}</span>`;
+                        }
+                    }
+                    
+                    html += `
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                html += `</div>`;
+                
+                workspacesList.innerHTML = html;
+            }
+            
+            // Load messages
+            function loadMessages() {
+                fetch('/api/messages')
+                    .then(response => response.json())
+                    .then(data => {
+                        updateChatDisplay(data.messages);
+                    })
+                    .catch(error => {
+                        console.error('Error loading messages:', error);
+                    });
+            }
+            
+            // Update chat display
+            function updateChatDisplay(messages) {
+                const chatContainer = document.getElementById('chatContainer');
+                
+                if (messages.length === 0) {
+                    chatContainer.innerHTML = `
+                        <div class="text-center text-muted">
+                            <p>No messages available</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let html = '';
+                
+                // Reverse messages to display newest at the bottom
+                const sortedMessages = messages.sort((a, b) => a.timestamp - b.timestamp);
+                
+                for (const message of sortedMessages) {
+                    const messageClass = getMessageClass(message.message_type);
+                    const content = typeof message.content === 'object' ? message.content.text : message.content;
+                    const recipientText = message.recipient ? ` to ${message.recipient}` : '';
+                    
+                    html += `
+                        <div class="message ${messageClass}">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <strong>${message.sender}${recipientText}</strong>
+                                <small class="text-muted">${formatDate(message.timestamp)}</small>
+                            </div>
+                            <div>${content}</div>
+                        </div>
+                    `;
+                }
+                
+                chatContainer.innerHTML = html;
+                
+                // Scroll to bottom
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+            
+            // Add a new message to the chat
+            function addMessage(message) {
+                const chatContainer = document.getElementById('chatContainer');
+                
+                const messageClass = getMessageClass(message.message_type);
+                const content = typeof message.content === 'object' ? message.content.text : message.content;
+                const recipientText = message.recipient ? ` to ${message.recipient}` : '';
+                
+                const messageElement = document.createElement('div');
+                messageElement.className = `message ${messageClass}`;
+                messageElement.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <strong>${message.sender}${recipientText}</strong>
+                        <small class="text-muted">${formatDate(message.timestamp)}</small>
+                    </div>
+                    <div>${content}</div>
+                `;
+                
+                chatContainer.appendChild(messageElement);
+                
+                // Scroll to bottom
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+            
+            // Get message class
+            function getMessageClass(messageType) {
+                switch (messageType) {
+                    case 'system':
+                        return 'message-system';
+                    case 'chat':
+                        return 'message-chat';
+                    case 'command':
+                        return 'message-command';
+                    case 'result':
+                        return 'message-result';
+                    case 'error':
+                        return 'message-error';
+                    default:
+                        return 'message-chat';
+                }
+            }
+            
+            // Event listeners
+            
+            // Send message form
+            const messageForm = document.getElementById('messageForm');
+            messageForm.addEventListener('submit', function(event) {
+                event.preventDefault();
+                
+                const recipientSelect = document.getElementById('recipientSelect');
+                const messageInput = document.getElementById('messageInput');
+                
+                const recipient = recipientSelect.value || null;
+                const content = messageInput.value.trim();
+                
+                if (!content) {
+                    return;
+                }
+                
+                // Send message
+                fetch('/api/message', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        from_name: 'User',
+                        to_name: recipient,
+                        content: content,
+                        message_type: 'chat'
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Clear input
+                        messageInput.value = '';
+                    } else {
+                        console.error('Error sending message:', data.error);
+                        alert('Error sending message: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error sending message:', error);
+                    alert('Error sending message: ' + error.message);
+                });
+            });
+            
+            // Load initial messages
+            loadMessages();
+            
+            // Computer select change
+            const cmdComputer = document.getElementById('cmdComputer');
+            cmdComputer.addEventListener('change', function() {
+                const computerName = this.value;
+                
+                if (!computerName) {
+                    return;
+                }
+                
+                // Load tools for the selected computer
+                fetch(`/api/computers/${computerName}/tools`)
+                    .then(response => response.json())
+                    .then(data => {
+                        updateToolSelect(data.tools);
+                    })
+                    .catch(error => {
+                        console.error('Error loading tools:', error);
+                    });
+            });
+            
+            // Update tool select
+            function updateToolSelect(tools) {
+                const cmdTool = document.getElementById('cmdTool');
+                
+                // Clear existing options except the first one
+                while (cmdTool.options.length > 1) {
+                    cmdTool.remove(1);
+                }
+                
+                // Add tool options
+                for (const tool of tools) {
+                    const option = document.createElement('option');
+                    option.value = tool.name;
+                    option.textContent = `${tool.name}: ${tool.description}`;
+                    cmdTool.appendChild(option);
+                }
+            }
+            
+            // Tool select change
+            const cmdTool = document.getElementById('cmdTool');
+            cmdTool.addEventListener('change', function() {
+                const computerName = cmdComputer.value;
+                const toolName = this.value;
+                
+                if (!computerName || !toolName) {
+                    return;
+                }
+                
+                // Load parameters for the selected tool
+                fetch(`/api/computers/${computerName}/tools`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const tool = data.tools.find(t => t.name === toolName);
+                        updateToolParameters(tool);
+                    })
+                    .catch(error => {
+                        console.error('Error loading tool parameters:', error);
+                    });
+            });
+            
+            // Update tool parameters
+            function updateToolParameters(tool) {
+                const cmdParamsContainer = document.getElementById('cmdParamsContainer');
+                
+                if (!tool || !tool.parameters) {
+                    cmdParamsContainer.innerHTML = `
+                        <div class="text-center text-muted">
+                            <p>No parameters for this tool</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let html = '';
+                
+                for (const [paramName, paramInfo] of Object.entries(tool.parameters)) {
+                    const inputId = `param_${paramName}`;
+                    const required = paramInfo.required ? 'required' : '';
+                    const defaultValue = paramInfo.default || '';
+                    
+                    html += `
+                        <div class="mb-3">
+                            <label for="${inputId}" class="form-label">${paramName}</label>
+                            <input type="text" class="form-control" id="${inputId}" value="${defaultValue}" ${required}>
+                            <small class="text-muted">${paramInfo.description || ''}</small>
+                        </div>
+                    `;
+                }
+                
+                cmdParamsContainer.innerHTML = html;
+            }
+            
+            // Execute command button
+            const executeCommandBtn = document.getElementById('executeCommandBtn');
+            executeCommandBtn.addEventListener('click', function() {
+                const computerName = cmdComputer.value;
+                const toolName = cmdTool.value;
+                const agentName = document.getElementById('cmdAgent').value || null;
+                
+                if (!computerName || !toolName) {
+                    alert('Please select a computer and a tool');
+                    return;
+                }
+                
+                // Collect parameters
+                const params = {};
+                const paramInputs = document.querySelectorAll(`#cmdParamsContainer input`);
+                paramInputs.forEach(input => {
+                    const paramName = input.id.replace('param_', '');
+                    params[paramName] = input.value;
+                });
+                
+                // Execute command
+                fetch('/api/command', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        computer_name: computerName,
+                        tool_name: toolName,
+                        args: [],
+                        kwargs: params,
+                        agent_name: agentName
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(`Command executed successfully`);
+                        
+                        // Close the modal
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('executeCommandModal'));
+                        modal.hide();
+                        
+                        // Display result in chat
+                        const resultContent = JSON.stringify(data.result, null, 2);
+                        const resultMessage = {
+                            id: Date.now().toString(),
+                            timestamp: Date.now() / 1000,
+                            sender: agentName || 'System',
+                            recipient: null,
+                            message_type: 'result',
+                            content: `Executed command ${toolName} on ${computerName}:\n\n${resultContent}`
+                        };
+                        
+                        addMessage(resultMessage);
+                    } else {
+                        console.error('Error executing command:', data.error);
+                        alert('Error executing command: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error executing command:', error);
+                    alert('Error executing command: ' + error.message);
+                });
+            });
+            
+            // Add agent button
+            const addAgentBtn = document.getElementById('addAgentBtn');
+            addAgentBtn.addEventListener('click', function() {
+                const name = document.getElementById('agentName').value.trim();
+                const role = document.getElementById('agentRole').value.trim();
+                const description = document.getElementById('agentDescription').value.trim();
+                const model = document.getElementById('agentModel').value;
+                const prompt = document.getElementById('agentPrompt').value.trim();
+                
+                // Collect selected tools
+                const tools = [];
+                const toolCheckboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+                toolCheckboxes.forEach(checkbox => {
+                    tools.push(checkbox.value);
+                });
+                
+                if (!name || !role || !description) {
+                    alert('Please fill in all required fields');
+                    return;
+                }
+                
+                // Add agent
+                fetch('/api/agents', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        role: role,
+                        description: description,
+                        llm_model: model,
+                        tools: tools,
+                        system_prompt: prompt || undefined
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(`Agent ${name} added successfully`);
+                        
+                        // Close the modal
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('addAgentModal'));
+                        modal.hide();
+                        
+                        // Reset form
+                        document.getElementById('addAgentForm').reset();
+                        
+                        // Refresh agents
+                        loadAgents();
+                    } else {
+                        console.error('Error adding agent:', data.error);
+                        alert('Error adding agent: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error adding agent:', error);
+                    alert('Error adding agent: ' + error.message);
+                });
+            });
+            
+            // Add project button
+            const addProjectBtn = document.getElementById('addProjectBtn');
+            addProjectBtn.addEventListener('click', function() {
+                const name = document.getElementById('projectName').value.trim();
+                const description = document.getElementById('projectDescription').value.trim();
+                const goalsText = document.getElementById('projectGoals').value.trim();
+                
+                // Parse goals
+                const goals = goalsText.split('\n').filter(goal => goal.trim() !== '');
+                
+                // Collect selected team members
+                const teamMembers = [];
+                const teamMemberCheckboxes = document.querySelectorAll('#projectTeamMembers input[type="checkbox"]:checked');
+                teamMemberCheckboxes.forEach(checkbox => {
+                    teamMembers.push(checkbox.value);
+                });
+                
+                if (!name || !description || goals.length === 0) {
+                    alert('Please fill in all required fields');
+                    return;
+                }
+                
+                // Create project
+                fetch('/api/projects', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        description: description,
+                        goals: goals,
+                        team_members: teamMembers
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(`Project ${name} created successfully`);
+                        
+                        // Close the modal
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('addProjectModal'));
+                        modal.hide();
+                        
+                        // Reset form
+                        document.getElementById('addProjectForm').reset();
+                        
+                        // Refresh projects
+                        loadProjects();
+                    } else {
+                        console.error('Error creating project:', data.error);
+                        alert('Error creating project: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error creating project:', error);
+                    alert('Error creating project: ' + error.message);
+                });
+            });
+            
+            // Load memories button
+            const loadMemoriesBtn = document.getElementById('loadMemoriesBtn');
+            loadMemoriesBtn.addEventListener('click', function() {
+                const agentName = document.getElementById('memoryAgentSelect').value;
+                const memoryType = document.getElementById('memoryTypeSelect').value;
+                
+                if (!agentName) {
+                    alert('Please select an agent');
+                    return;
+                }
+                
+                // Load memories
+                fetch(`/api/memories/${agentName}?${memoryType ? `memory_type=${memoryType}` : ''}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        updateMemoriesList(data);
+                    })
+                    .catch(error => {
+                        console.error('Error loading memories:', error);
+                    });
+            });
+            
+            // Update memories list
+            function updateMemoriesList(data) {
+                const memoriesList = document.getElementById('memoriesList');
+                
+                if (!data.success || data.memories.length === 0) {
+                    memoriesList.innerHTML = `
+                        <div class="text-center text-muted">
+                            <p>No memories found</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let html = `
+                    <div class="alert alert-info">
+                        Found ${data.memories.length} memories for ${data.agent_name}
+                    </div>
+                    <div class="list-group">
+                `;
+                
+                for (const memory of data.memories) {
+                    html += `
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <strong>${memory.memory_type}</strong>
+                                <small class="text-muted">${formatDate(memory.timestamp)}</small>
+                            </div>
+                            <p>${memory.content}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <small class="text-muted">Importance: ${memory.importance.toFixed(2)}</small>
+                                </div>
+                                <div>
+                    `;
+                    
+                    if (memory.tags && memory.tags.length > 0) {
+                        for (const tag of memory.tags) {
+                            html += `<span class="badge bg-light text-dark me-1">${tag}</span>`;
+                        }
+                    }
+                    
+                    html += `
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                html += `</div>`;
+                
+                memoriesList.innerHTML = html;
+            }
+            
+            // Refresh status button
+            const refreshStatusBtn = document.getElementById('refreshStatusBtn');
+            refreshStatusBtn.addEventListener('click', function() {
+                loadStatus();
+            });
+            
+            // Status modal show event
+            const statusModal = document.getElementById('statusModal');
+            statusModal.addEventListener('show.bs.modal', function() {
+                // Load latest status
+                loadStatus();
+            });
+        });
+    </script>
+</body>
+</html>
